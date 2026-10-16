@@ -804,10 +804,10 @@ function drawAll(S,F,TR){if(typeof Chart==='undefined')return;allCharts.forEach(
 /* ---- login v2: password + OTP code + set password ---- */
 {const E=$('lemail');const sv=localStorage.getItem('qq_email');if(sv)E.value=sv;
  const step=id=>['lform','cform','pform'].forEach(f=>$(f).hidden=f!==id);
- let viaCode=false,pendingS=null;
+ let viaCode=false,viaPw=false,pendingS=null;
  const em=()=>{const v=E.value.trim().toLowerCase();localStorage.setItem('qq_email',v);return v};
  $('lform').onsubmit=async ev=>{ev.preventDefault();const pw=$('lpw').value;if(!pw){$('lmsg').textContent='Inserisci la password o ricevi un codice via email.';$('lpw').focus();return}
-  $('lmsg').textContent='Accesso…';try{await chk(sb.auth.signInWithPassword({email:em(),password:pw}));$('lmsg').textContent=''}catch(e){$('lmsg').textContent='Accesso non riuscito: '+(e.message||e)}};
+  $('lmsg').textContent='Accesso…';viaPw=true;try{await chk(sb.auth.signInWithPassword({email:em(),password:pw}));$('lmsg').textContent=''}catch(e){$('lmsg').textContent='Accesso non riuscito: '+(e.message||e)}};
  $('lcode').onclick=async()=>{if(!E.reportValidity())return;$('lmsg').textContent='Invio…';
   try{await chk(sb.auth.signInWithOtp({email:em(),options:{shouldCreateUser:false,emailRedirectTo:'https://crisdisclafani.github.io/qashqai/'}}));$('cto').textContent=em();$('lmsg').textContent='';step('cform');$('ccode').focus()}
   catch(e){$('lmsg').textContent='Invio non riuscito: '+(e.message||e)}};
@@ -817,10 +817,10 @@ function drawAll(S,F,TR){if(typeof Chart==='undefined')return;allCharts.forEach(
   try{await chk(sb.auth.verifyOtp({email:em(),token:$('ccode').value,type:'email'}));$('cmsg').textContent=''}catch(e){viaCode=false;$('cmsg').textContent='Codice non valido o scaduto: '+(e.message||e)}};
  const _al=afterLogin;
  afterLogin=async function(s){const md=(s&&s.user&&s.user.user_metadata)||{};
-  if(viaCode&&!md.has_password&&!loggedIn){viaCode=false;pendingS=s;$('pemail').value=s.user.email;step('pform');$('login').classList.add('on');$('pnew').focus();return}
+  if(!viaPw&&!md.has_password&&!loggedIn&&!localStorage.getItem('qq_pwskip')){viaCode=false;pendingS=s;$('pemail').value=s.user.email;step('pform');$('login').classList.add('on');$('pnew').focus();return}
   return _al(s)};
  const fin=()=>{const s=pendingS;pendingS=null;step('lform');if(s)_al(s)};
- $('pskip').onclick=fin;
+ $('pskip').onclick=()=>{localStorage.setItem('qq_pwskip','1');fin()};
  $('pform').onsubmit=async ev=>{ev.preventDefault();$('pmsg').textContent='Salvataggio…';
   try{await chk(sb.auth.updateUser({password:$('pnew').value,data:{has_password:true}}));toast('Password impostata');fin()}catch(e){$('pmsg').textContent='Errore: '+(e.message||e)}};
  const _sl=showLogin;showLogin=function(m){step('lform');_sl(m)};
